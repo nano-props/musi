@@ -1,0 +1,14 @@
+{
+  "title": "我的歌单",
+  "songs": [
+    {
+      "title": "第一首歌",
+      "artist": "示例歌手",
+      "url": "https://example.com/audio/first.m4a"
+    },
+    {
+      "title": "第二首歌",
+      "url": "https://example.com/audio/second.m4a"
+    }
+  ]
+}
