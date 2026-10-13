@@ -3,6 +3,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+if [[ -z "${DEVELOPER_DIR:-}" && -d /Applications/Xcode.app/Contents/Developer ]]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+fi
+
 if ! command -v xcodegen >/dev/null; then
   echo "请先安装 XcodeGen：brew install xcodegen" >&2
   exit 1
@@ -32,9 +36,10 @@ xcodebuild \
 xcrun simctl install "$device_udid" build/DerivedData/Build/Products/Debug-iphonesimulator/Musi.app
 xcrun simctl launch "$device_udid" com.example.musi
 
-developer_dir="$(xcode-select -p)"
-if [[ -d "$developer_dir/Applications/DeviceHub.app" ]]; then
-  open -a "$developer_dir/Applications/DeviceHub.app"
-elif [[ -d "$developer_dir/Applications/Simulator.app" ]]; then
-  open -a "$developer_dir/Applications/Simulator.app"
+developer_dir="${DEVELOPER_DIR:-$(xcode-select -p)}"
+app_dir="$(dirname "$developer_dir")/Applications"
+if [[ -d "$app_dir/DeviceHub.app" ]]; then
+  open -a "$app_dir/DeviceHub.app"
+elif [[ -d "$app_dir/Simulator.app" ]]; then
+  open -a "$app_dir/Simulator.app"
 fi

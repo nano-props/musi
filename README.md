@@ -32,6 +32,8 @@
 https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.json
 ```
 
+在 App 首次打开的设置页，也可以点击“使用演示歌单”，然后点击“保存”。
+
 正式使用时，把自己的 JSON 放在能公开读取的 HTTPS 地址，例如静态文件托管服务，再将真实音频 URL 填入 `songs[].url`。仓库内的两段演示音只是测试素材，可以随时替换。
 
 为方便导入现有歌单，播放器也兼容 `tracks` 或 `url_list` 代替 `songs`，每项可为歌曲对象或 URL 字符串，例如 `{"url_list":["https://example.com/first.m4a"]}`。歌曲对象还可用 `audio_url` 或 `audioUrl`；未提供标题时从文件名生成。相对音频地址会相对于歌单 JSON 地址解析。音频 URL 应直接指向可由 iOS `AVPlayer` 播放的资源；此 App 不解析网页中的播放链接。

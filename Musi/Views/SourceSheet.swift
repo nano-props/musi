@@ -6,7 +6,8 @@ struct SourceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var input = ""
     @State private var isSaving = false
-    @FocusState private var inputFocused: Bool
+
+    private let demoURL = "https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.json"
 
     var body: some View {
         NavigationStack {
@@ -17,8 +18,12 @@ struct SourceSheet: View {
                         .textContentType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .focused($inputFocused)
                         .submitLabel(.done)
+                    Button {
+                        input = demoURL
+                    } label: {
+                        Label("使用演示歌单", systemImage: "play.rectangle")
+                    }
                 } header: {
                     Text("歌单地址")
                 } footer: {
@@ -57,7 +62,6 @@ struct SourceSheet: View {
             }
             .onAppear {
                 input = library.sourceURL
-                if input.isEmpty { inputFocused = true }
             }
         }
     }
