@@ -51,7 +51,19 @@ xcrun simctl boot <iPhone-模拟器-UDID>
 ./scripts/run-simulator.sh
 ```
 
-也可以运行 `xcodegen generate` 生成 `Musi.xcodeproj`，再自行用 `xcodebuild` 构建。真机安装需要在 `project.yml` 中将 `PRODUCT_BUNDLE_IDENTIFIER` 改为自己的唯一 ID，并配置 Apple 开发团队和签名。这个示例项目默认使用 `com.example.musi`，仅便于模拟器开发。
+也可以运行 `xcodegen generate` 生成 `Musi.xcodeproj`，再自行用 `xcodebuild` 构建。
+
+## 安装到自己的 iPhone
+
+1. 用数据线连接 iPhone 与 Mac，在手机上点“信任此电脑”并输入手机密码。在“设置 → 隐私与安全性 → 开发者模式”中打开开发者模式，按提示重启并确认。
+2. 第一次真机签名时，在 Xcode 的“设置 → Apple Accounts”登录自己的 Apple 账号。免费账号也能使用 Personal Team 安装到自己的设备；记下这个团队的 Team ID。此后可用终端构建和安装。
+3. 运行 `xcrun devicectl list devices`，找到实体 iPhone 的设备 ID。然后执行：
+
+```bash
+./scripts/run-device.sh <iPhone-设备ID> <Apple-Team-ID> com.yourname.musi
+```
+
+最后一个参数需要换成你自己的唯一 Bundle ID，后续更新 App 时保持不变。脚本会自动生成项目、签名、安装并启动；模拟器默认 ID `com.example.musi` 不会因此改变。免费 Personal Team 的开发描述文件有效期为 7 天，到期后需要重新构建安装。
 
 ## 检查歌单解析
 
