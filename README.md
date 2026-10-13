@@ -65,6 +65,8 @@ xcrun simctl boot <iPhone-模拟器-UDID>
 
 最后一个参数需要换成你自己的唯一 Bundle ID，后续更新 App 时保持不变。脚本会自动生成项目、签名、安装并启动；模拟器默认 ID `com.example.musi` 不会因此改变。免费 Personal Team 的开发描述文件有效期为 7 天，到期后需要重新构建安装。
 
+首次安装后，如果 iPhone 提示开发者未受信任，打开手机的“设置 → 通用 → VPN 与设备管理”，选择自己的开发者 App 并按提示信任（某些系统版本需要重启）。之后点手机上的 Musi 图标即可打开；也可以在连接手机时运行 `xcrun devicectl device process launch --device <iPhone-设备ID> <Bundle-ID>`。
+
 ## 检查歌单解析
 
 这一项只需要 Swift 命令行工具，无需完整 Xcode：
