@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.schema.json",
+  "title": "Musi 歌单 v1",
+  "description": "远程维护的 Musi 歌单。所有音频地址应为可直接播放的 HTTPS 链接。",
+  "type": "object",
+  "required": ["schema_version", "title", "songs"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "歌单格式版本。"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "歌单名称。"
+    },
+    "songs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["title", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "歌曲名称。"
+          },
+          "artist": {
+            "type": "string",
+            "minLength": 1,
+            "description": "可选的歌手名称。"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://",
+            "description": "直接指向音频文件的 HTTPS URL，例如 M4A。"
+          }
+        }
+      }
+    }
+  }
+}

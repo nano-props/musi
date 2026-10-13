@@ -15,6 +15,7 @@ struct Playlist {
 enum PlaylistError: LocalizedError {
     case invalidSourceURL
     case invalidJSON
+    case unsupportedVersion
     case missingSongs
     case invalidSong(Int)
     case emptyPlaylist
@@ -26,6 +27,8 @@ enum PlaylistError: LocalizedError {
             return "请输入有效的 HTTPS 歌单地址。"
         case .invalidJSON:
             return "歌单不是有效的 JSON。"
+        case .unsupportedVersion:
+            return "暂不支持这个歌单格式版本，请使用 schema_version: 1。"
         case .missingSongs:
             return "歌单需要包含 songs、tracks 或 url_list 数组。"
         case .invalidSong(let index):
@@ -50,6 +53,14 @@ enum PlaylistParser {
         let entries: [Any]
         let title: String
         if let object = root as? [String: Any] {
+            if let version = object["schema_version"] {
+                guard let number = version as? NSNumber,
+                      CFGetTypeID(number) != CFBooleanGetTypeID(),
+                      number.intValue == 1,
+                      number.doubleValue == 1 else {
+                    throw PlaylistError.unsupportedVersion
+                }
+            }
             guard let list = (object["songs"] ?? object["tracks"] ?? object["url_list"]) as? [Any] else {
                 throw PlaylistError.missingSongs
             }

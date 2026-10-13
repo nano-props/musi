@@ -4,19 +4,37 @@
 
 ## 歌单格式
 
-歌单地址和歌曲地址均需使用 **HTTPS**。App 会在每次打开时读取歌单；在列表上下拉也可以手动刷新。服务端应返回 JSON，例如 [examples/playlist.json](examples/playlist.json)：
+歌单地址和歌曲地址均需使用 **HTTPS**。App 会在每次打开时读取歌单；在列表上下拉也可以手动刷新。推荐按 [JSON Schema](examples/playlist.schema.json) 维护数据，完整示例在 [examples/playlist.json](examples/playlist.json)：
 
 ```json
 {
-  "title": "我的歌单",
+  "schema_version": 1,
+  "title": "Musi 演示歌单",
   "songs": [
-    { "title": "第一首歌", "artist": "示例歌手", "url": "https://example.com/audio/first.m4a" },
-    { "title": "第二首歌", "url": "https://example.com/audio/second.m4a" }
+    { "title": "演示音 A", "artist": "Musi 示例", "url": "https://raw.githubusercontent.com/nano-props/musi/main/examples/audio/demo-a.m4a" },
+    { "title": "演示音 B", "artist": "Musi 示例", "url": "https://raw.githubusercontent.com/nano-props/musi/main/examples/audio/demo-b.m4a" }
   ]
 }
 ```
 
-也支持 `tracks` 或 `url_list` 代替 `songs`，每项可以是歌曲对象或 URL 字符串。例如 `{"url_list":["https://example.com/first.m4a"]}`。歌曲对象可用 `url`、`audio_url` 或 `audioUrl`；`title`、`artist` 可选。相对音频地址会相对于歌单 JSON 地址解析。音频 URL 应直接指向可由 iOS `AVPlayer` 播放的资源，例如 M4A；此 App 不解析网页中的播放链接。
+| 字段 | 说明 |
+| --- | --- |
+| `schema_version` | 格式版本，目前为 `1`。 |
+| `title` | 歌单名称，显示在列表标题处。 |
+| `songs` | 按播放顺序排列的歌曲数组。 |
+| `songs[].title` | 歌曲名称。 |
+| `songs[].artist` | 可选的歌手名称。 |
+| `songs[].url` | 可直接播放的 HTTPS 音频地址，例如 M4A。 |
+
+将以下演示歌单地址输入 App，就能播放仓库中的两段原创测试音频：
+
+```text
+https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.json
+```
+
+正式使用时，把自己的 JSON 放在能公开读取的 HTTPS 地址，例如静态文件托管服务，再将真实音频 URL 填入 `songs[].url`。仓库内的两段演示音只是测试素材，可以随时替换。
+
+为方便导入现有歌单，播放器也兼容 `tracks` 或 `url_list` 代替 `songs`，每项可为歌曲对象或 URL 字符串，例如 `{"url_list":["https://example.com/first.m4a"]}`。歌曲对象还可用 `audio_url` 或 `audioUrl`；未提供标题时从文件名生成。相对音频地址会相对于歌单 JSON 地址解析。音频 URL 应直接指向可由 iOS `AVPlayer` 播放的资源；此 App 不解析网页中的播放链接。
 
 ## 在终端运行
 

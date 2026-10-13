@@ -31,3 +31,10 @@ xcodebuild \
   build
 xcrun simctl install "$device_udid" build/DerivedData/Build/Products/Debug-iphonesimulator/Musi.app
 xcrun simctl launch "$device_udid" com.example.musi
+
+developer_dir="$(xcode-select -p)"
+if [[ -d "$developer_dir/Applications/DeviceHub.app" ]]; then
+  open -a "$developer_dir/Applications/DeviceHub.app"
+elif [[ -d "$developer_dir/Applications/Simulator.app" ]]; then
+  open -a "$developer_dir/Applications/Simulator.app"
+fi

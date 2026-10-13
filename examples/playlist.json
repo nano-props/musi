@@ -1,14 +1,16 @@
 {
-  "title": "我的歌单",
+  "schema_version": 1,
+  "title": "Musi 演示歌单",
   "songs": [
     {
-      "title": "第一首歌",
-      "artist": "示例歌手",
-      "url": "https://example.com/audio/first.m4a"
+      "title": "演示音 A",
+      "artist": "Musi 示例",
+      "url": "https://raw.githubusercontent.com/nano-props/musi/main/examples/audio/demo-a.m4a"
     },
     {
-      "title": "第二首歌",
-      "url": "https://example.com/audio/second.m4a"
+      "title": "演示音 B",
+      "artist": "Musi 示例",
+      "url": "https://raw.githubusercontent.com/nano-props/musi/main/examples/audio/demo-b.m4a"
     }
   ]
 }
