@@ -4,7 +4,7 @@ A simple SwiftUI music player for iPhone. Add a URL to a remote JSON playlist, c
 
 ## Playlist
 
-Host a JSON file at a public HTTPS URL. Audio URLs must also use HTTPS. See the [JSON schema](examples/playlist.schema.json) for the full format.
+Host a JSON file at a public HTTPS URL. Audio URLs must also use HTTPS. See the [JSON schema](schema/playlist.schema.json) for the full format.
 
 ```json
 {

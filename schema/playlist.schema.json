@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.schema.json",
+  "$id": "https://raw.githubusercontent.com/nano-props/musi/main/schema/playlist.schema.json",
   "title": "Musi 歌单 v1",
   "description": "远程维护的 Musi 歌单。所有音频地址应为可直接播放的 HTTPS 链接。",
   "type": "object",
