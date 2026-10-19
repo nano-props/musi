@@ -1,6 +1,6 @@
 # Musi
 
-A simple SwiftUI music player for iPhone. Add a URL to a remote JSON playlist, choose a song, and play it. Musi supports background audio, lock screen controls, and pull to refresh.
+A simple SwiftUI music player for iPhone. Add a remote JSON playlist URL, choose a song, and play it. Musi supports background audio, lock screen controls, pull to refresh, and offline playback.
 
 ## Playlist
 
@@ -14,13 +14,16 @@ Host a JSON file at a public HTTPS URL. Audio URLs must also use HTTPS. See the 
     {
       "title": "First Song",
       "artist": "Artist",
-      "url": "https://example.com/audio/first.m4a"
+      "url": "https://example.com/audio/first.m4a",
+      "artwork_url": "https://example.com/art/first.jpg"
     }
   ]
 }
 ```
 
-Musi also accepts `tracks` or `url_list` instead of `songs`. Entries can be song objects or URL strings. Relative audio URLs are resolved against the playlist URL.
+Musi also accepts `tracks` or `url_list` instead of `songs`. Entries can be song objects or URL strings. Relative audio and artwork URLs are resolved against the playlist URL.
+
+The last loaded playlist is saved on the device. Songs are cached when played; tap a song's download button or **Download All** to prepare for offline listening. Song artwork is cached too. Keep Musi open until downloads finish. Settings lets you clear downloaded media.
 
 ## Run from the command line
 

@@ -10,8 +10,11 @@ final class PlaylistStore: ObservableObject {
 
     private let key = "playlistSourceURL"
     private let legacyDemoURL = "https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.json"
+    private let storage: OfflineStorage
+    private var refreshID = 0
 
-    init() {
+    init(storage: OfflineStorage = OfflineStorage()) {
+        self.storage = storage
         let savedURL = UserDefaults.standard.string(forKey: key) ?? ""
         if savedURL == legacyDemoURL {
             UserDefaults.standard.removeObject(forKey: key)
@@ -19,26 +22,41 @@ final class PlaylistStore: ObservableObject {
         } else {
             sourceURL = savedURL
         }
+        if let url = Self.validURL(sourceURL),
+           let data = storage.loadPlaylist(for: url) {
+            playlist = try? PlaylistParser.parse(data, sourceURL: url)
+        }
     }
 
-    func setSource(_ rawValue: String) async -> Bool {
+    func setSource(_ rawValue: String) -> Bool {
         let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard Self.validURL(value) != nil else {
             errorMessage = PlaylistError.invalidSourceURL.localizedDescription
             return false
         }
+        let changed = sourceURL != value
         sourceURL = value
         UserDefaults.standard.set(value, forKey: key)
-        playlist = nil
-        await refresh()
+        if changed, let url = Self.validURL(value),
+           let data = storage.loadPlaylist(for: url) {
+            playlist = try? PlaylistParser.parse(data, sourceURL: url)
+        } else if changed {
+            playlist = nil
+        }
+        isLoading = true
+        Task { await refresh() }
         return true
     }
 
     func refresh() async {
         guard let url = Self.validURL(sourceURL) else { return }
+        refreshID += 1
+        let requestID = refreshID
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
+        defer {
+            if requestID == refreshID { isLoading = false }
+        }
         do {
             var request = URLRequest(url: url)
             request.cachePolicy = .reloadIgnoringLocalCacheData
@@ -50,9 +68,16 @@ final class PlaylistStore: ObservableObject {
             guard (200..<300).contains(response.statusCode) else {
                 throw PlaylistError.httpStatus(response.statusCode)
             }
-            playlist = try PlaylistParser.parse(data, sourceURL: url)
+            let updated = try PlaylistParser.parse(data, sourceURL: url)
+            guard requestID == refreshID else { return }
+            playlist = updated
+            do {
+                try storage.savePlaylist(data, for: url)
+            } catch {
+                errorMessage = "歌单已加载，但无法保存离线副本：\(error.localizedDescription)"
+            }
         } catch {
-            errorMessage = error.localizedDescription
+            if requestID == refreshID { errorMessage = error.localizedDescription }
         }
     }
 

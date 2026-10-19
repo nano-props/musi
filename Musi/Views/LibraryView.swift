@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LibraryView: View {
     @EnvironmentObject private var library: PlaylistStore
+    @EnvironmentObject private var offline: OfflineStore
     @EnvironmentObject private var player: AudioPlayer
     @State private var showingSource = false
     @State private var showingPlayer = false
@@ -27,7 +28,10 @@ struct LibraryView: View {
                                 HStack(spacing: 10) {
                                     Image(systemName: "exclamationmark.circle")
                                         .foregroundStyle(.orange)
-                                    Text(error).font(.subheadline)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("歌单仍可使用").font(.subheadline.weight(.semibold))
+                                        Text(error).font(.caption).foregroundStyle(.secondary)
+                                    }
                                     Spacer(minLength: 4)
                                     Button("重试") { Task { await library.refresh() } }
                                         .font(.subheadline.weight(.semibold))
@@ -36,17 +40,42 @@ struct LibraryView: View {
                         }
                         Section {
                             ForEach(playlist.songs) { song in
-                                Button {
-                                    player.play(song, from: playlist)
-                                } label: {
-                                    SongRow(song: song, isCurrent: player.currentSong?.url == song.url)
+                                HStack(spacing: 8) {
+                                    Button {
+                                        player.play(song, from: playlist)
+                                    } label: {
+                                        SongRow(song: song, isCurrent: player.currentSong?.url == song.url)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    if offline.isAudioCached(song) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.green)
+                                            .frame(width: 44, height: 44)
+                                            .accessibilityLabel("已下载，可离线播放")
+                                    } else if offline.downloadingAudio.contains(song.url) {
+                                        ProgressView()
+                                            .frame(width: 44, height: 44)
+                                            .accessibilityLabel("正在下载")
+                                    } else {
+                                        Button {
+                                            offline.downloadSong(song)
+                                        } label: {
+                                            Image(systemName: "arrow.down.circle")
+                                                .frame(width: 44, height: 44)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .accessibilityLabel("下载\(song.title)")
+                                    }
                                 }
-                                .tint(.primary)
                             }
                         } header: {
                             Text(playlist.title)
                         } footer: {
-                            Text("共 \(playlist.songs.count) 首歌曲")
+                            Text(offline.isDownloadingAll
+                                 ? "正在下载 \(offline.completedDownloads)/\(offline.totalDownloads) 首"
+                                 : "已下载 \(offline.cachedSongCount(in: playlist))/\(playlist.songs.count) 首，可离线播放")
                         }
                     }
                     .listStyle(.insetGrouped)
@@ -64,6 +93,17 @@ struct LibraryView: View {
             }
             .navigationTitle("音乐")
             .toolbar {
+                if let playlist = library.playlist {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            offline.downloadAll(playlist)
+                        } label: {
+                            Image(systemName: "square.and.arrow.down")
+                        }
+                        .disabled(offline.isDownloadingAll)
+                        .accessibilityLabel("下载全部歌曲")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingSource = true
@@ -88,6 +128,14 @@ struct LibraryView: View {
             } message: {
                 Text(player.errorMessage ?? "")
             }
+            .alert("下载失败", isPresented: Binding(
+                get: { offline.errorMessage != nil },
+                set: { if !$0 { offline.errorMessage = nil } }
+            )) {
+                Button("好", role: .cancel) { offline.errorMessage = nil }
+            } message: {
+                Text(offline.errorMessage ?? "")
+            }
             .task {
                 if library.sourceURL.isEmpty {
                     showingSource = true
@@ -105,11 +153,8 @@ private struct SongRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: isCurrent ? "waveform" : "music.note")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(isCurrent ? Color.accentColor : .secondary)
+            SongArtworkView(song: song)
                 .frame(width: 42, height: 42)
-                .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
                 Text(song.title).font(.body.weight(isCurrent ? .semibold : .regular))
                     .lineLimit(1)
@@ -118,11 +163,7 @@ private struct SongRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if isCurrent {
-                Image(systemName: "speaker.wave.2.fill")
-                    .font(.caption)
-                    .foregroundStyle(.tint)
-            }
+            if isCurrent { Image(systemName: "speaker.wave.2.fill").font(.caption).foregroundStyle(.tint) }
         }
         .contentShape(Rectangle())
         .padding(.vertical, 3)
@@ -137,10 +178,10 @@ private struct MiniPlayer: View {
         HStack(spacing: 12) {
             Button { showingPlayer = true } label: {
                 HStack(spacing: 12) {
-                    Image(systemName: "music.note")
-                        .font(.title3)
-                        .frame(width: 44, height: 44)
-                        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                    if let song = player.currentSong {
+                        SongArtworkView(song: song)
+                            .frame(width: 44, height: 44)
+                    }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(player.currentSong?.title ?? "")
                             .font(.subheadline.weight(.semibold)).lineLimit(1)

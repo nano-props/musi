@@ -1,6 +1,7 @@
 import AVFoundation
 import Combine
 import MediaPlayer
+import UIKit
 
 @MainActor
 final class AudioPlayer: ObservableObject {
@@ -11,12 +12,17 @@ final class AudioPlayer: ObservableObject {
     @Published var errorMessage: String?
 
     private let player = AVPlayer()
+    private let offline: OfflineStore
+    private var currentArtwork: UIImage?
     private var songs: [Song] = []
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
     private var statusObserver: NSKeyValueObservation?
+    private var audioCacheTask: Task<Void, Never>?
+    private var artworkTask: Task<Void, Never>?
 
-    init() {
+    init(offline: OfflineStore) {
+        self.offline = offline
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
             queue: .main
@@ -43,7 +49,10 @@ final class AudioPlayer: ObservableObject {
             return
         }
         songs = playlist.songs
+        audioCacheTask?.cancel()
+        artworkTask?.cancel()
         currentSong = song
+        currentArtwork = nil
         elapsed = 0
         duration = 0
         errorMessage = nil
@@ -57,7 +66,8 @@ final class AudioPlayer: ObservableObject {
         }
 
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
-        let item = AVPlayerItem(url: song.url)
+        let localURL = offline.localAudioURL(for: song)
+        let item = AVPlayerItem(url: localURL ?? song.url)
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
@@ -74,6 +84,20 @@ final class AudioPlayer: ObservableObject {
         }
         player.replaceCurrentItem(with: item)
         resume()
+        if localURL == nil {
+            audioCacheTask = Task {
+                guard !Task.isCancelled else { return }
+                try? await offline.cacheAudio(song)
+            }
+        }
+        artworkTask = Task { [weak self] in
+            guard let self else { return }
+            guard !Task.isCancelled else { return }
+            let artwork = await self.offline.cacheArtwork(song)
+            guard self.currentSong?.url == song.url else { return }
+            self.currentArtwork = artwork
+            self.updateNowPlayingInfo()
+        }
     }
 
     func toggle() {
@@ -126,6 +150,10 @@ final class AudioPlayer: ObservableObject {
     }
 
     func stop() {
+        audioCacheTask?.cancel()
+        artworkTask?.cancel()
+        audioCacheTask = nil
+        artworkTask = nil
         player.pause()
         player.replaceCurrentItem(with: nil)
         statusObserver = nil
@@ -133,6 +161,7 @@ final class AudioPlayer: ObservableObject {
         endObserver = nil
         songs = []
         currentSong = nil
+        currentArtwork = nil
         isPlaying = false
         elapsed = 0
         duration = 0
@@ -148,6 +177,9 @@ final class AudioPlayer: ObservableObject {
         ]
         if let artist = currentSong.artist { info[MPMediaItemPropertyArtist] = artist }
         if duration > 0 { info[MPMediaItemPropertyPlaybackDuration] = duration }
+        if let currentArtwork {
+            info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: currentArtwork.size) { _ in currentArtwork }
+        }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 

@@ -34,6 +34,11 @@
             "minLength": 1,
             "description": "可选的歌手名称。"
           },
+          "artwork_url": {
+            "type": "string",
+            "pattern": "^https://",
+            "description": "可选的歌曲封面 HTTPS URL，例如 JPEG 或 PNG。"
+          },
           "url": {
             "type": "string",
             "pattern": "^https://",

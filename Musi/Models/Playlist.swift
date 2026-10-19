@@ -5,6 +5,7 @@ struct Song: Identifiable, Equatable {
     let title: String
     let artist: String?
     let url: URL
+    let artworkURL: URL?
 }
 
 struct Playlist {
@@ -18,6 +19,7 @@ enum PlaylistError: LocalizedError {
     case unsupportedVersion
     case missingSongs
     case invalidSong(Int)
+    case invalidArtwork(Int)
     case emptyPlaylist
     case httpStatus(Int)
 
@@ -33,6 +35,8 @@ enum PlaylistError: LocalizedError {
             return "歌单需要包含 songs、tracks 或 url_list 数组。"
         case .invalidSong(let index):
             return "第 \(index + 1) 首歌曲缺少有效的 HTTPS 音频地址。"
+        case .invalidArtwork(let index):
+            return "第 \(index + 1) 首歌曲的图片地址必须是 HTTPS 链接。"
         case .emptyPlaylist:
             return "歌单中还没有歌曲。"
         case .httpStatus(let code):
@@ -78,15 +82,18 @@ enum PlaylistParser {
             let rawURL: String
             let rawTitle: String?
             let artist: String?
+            let artworkValue: Any?
             if let value = entry as? String {
                 rawURL = value
                 rawTitle = nil
                 artist = nil
+                artworkValue = nil
             } else if let value = entry as? [String: Any],
                       let link = (value["url"] ?? value["audio_url"] ?? value["audioUrl"]) as? String {
                 rawURL = link
                 rawTitle = value["title"] as? String ?? value["name"] as? String
                 artist = nonempty(value["artist"] as? String)
+                artworkValue = value["artwork_url"] ?? value["artworkUrl"] ?? value["image_url"]
             } else {
                 throw PlaylistError.invalidSong(index)
             }
@@ -97,10 +104,24 @@ enum PlaylistParser {
                 throw PlaylistError.invalidSong(index)
             }
             let fallback = url.deletingPathExtension().lastPathComponent.removingPercentEncoding ?? ""
+            let artworkURL: URL?
+            if let artworkValue {
+                guard let rawArtwork = artworkValue as? String,
+                      !rawArtwork.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      let resolved = URL(string: rawArtwork, relativeTo: sourceURL)?.absoluteURL,
+                      resolved.scheme?.lowercased() == "https",
+                      resolved.host != nil else {
+                    throw PlaylistError.invalidArtwork(index)
+                }
+                artworkURL = resolved
+            } else {
+                artworkURL = nil
+            }
             return Song(id: index,
                         title: nonempty(rawTitle) ?? nonempty(fallback) ?? "歌曲 \(index + 1)",
                         artist: artist,
-                        url: url)
+                        url: url,
+                        artworkURL: artworkURL)
         }
         return Playlist(title: title, songs: songs)
     }

@@ -10,13 +10,16 @@ struct NowPlayingView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 Spacer(minLength: 24)
-                Image(systemName: "music.note")
-                    .font(.system(size: 100, weight: .light))
-                    .foregroundStyle(Color.accentColor)
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(1, contentMode: .fit)
-                    .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 24))
-                    .padding(.horizontal, 34)
+                GeometryReader { geometry in
+                    if let song = player.currentSong {
+                        let size = min(geometry.size.width, geometry.size.height)
+                        SongArtworkView(song: song, cornerRadius: 24)
+                            .frame(width: size, height: size)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+                .aspectRatio(1, contentMode: .fit)
+                .padding(.horizontal, 34)
                 Spacer(minLength: 32)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(player.currentSong?.title ?? "")
