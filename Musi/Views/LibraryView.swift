@@ -50,8 +50,9 @@ struct LibraryView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                     if offline.isAudioCached(song) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(.green)
+                                        Image(systemName: "arrow.down.to.line")
+                                            .font(.caption)
+                                            .foregroundStyle(.tertiary)
                                             .frame(width: 44, height: 44)
                                             .accessibilityLabel("已下载，可离线播放")
                                     } else if offline.downloadingAudio.contains(song.url) {
