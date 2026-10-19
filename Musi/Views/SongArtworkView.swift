@@ -28,6 +28,9 @@ struct SongArtworkView: View {
             image = nil
             image = await offline.cacheArtwork(song)
         }
+        .onChange(of: offline.artworkRevision) { _, _ in
+            image = offline.cachedArtwork(for: song)
+        }
         .accessibilityHidden(true)
     }
 }

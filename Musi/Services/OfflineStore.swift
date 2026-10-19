@@ -24,7 +24,7 @@ final class OfflineStore: ObservableObject {
     @Published private(set) var isDownloadingAll = false
     @Published private(set) var completedDownloads = 0
     @Published private(set) var totalDownloads = 0
-    @Published private(set) var revision = 0
+    @Published private(set) var artworkRevision = 0
     @Published var errorMessage: String?
 
     let storage: OfflineStorage
@@ -71,15 +71,17 @@ final class OfflineStore: ObservableObject {
             }
         }
         _ = try await task.value
-        if generation == startGeneration { revision += 1 }
+    }
+
+    func cachedArtwork(for song: Song) -> UIImage? {
+        guard let remoteURL = song.artworkURL,
+              let localURL = storage.localURL(for: remoteURL, kind: .artwork) else { return nil }
+        return UIImage(contentsOfFile: localURL.path)
     }
 
     func cacheArtwork(_ song: Song) async -> UIImage? {
         guard let remoteURL = song.artworkURL else { return nil }
-        if let localURL = storage.localURL(for: remoteURL, kind: .artwork),
-           let image = UIImage(contentsOfFile: localURL.path) {
-            return image
-        }
+        if let image = cachedArtwork(for: song) { return image }
         do {
             if let task = artworkTasks[remoteURL] {
                 return UIImage(contentsOfFile: try await task.value.path)
@@ -100,7 +102,7 @@ final class OfflineStore: ObservableObject {
                 if generation == startGeneration { artworkTasks[remoteURL] = nil }
             }
             let localURL = try await task.value
-            if generation == startGeneration { revision += 1 }
+            if generation == startGeneration { artworkRevision += 1 }
             return UIImage(contentsOfFile: localURL.path)
         } catch {
             return nil
@@ -113,6 +115,7 @@ final class OfflineStore: ObservableObject {
             guard generation == startGeneration else { return }
             do {
                 try await cacheAudio(song)
+                guard !Task.isCancelled, generation == startGeneration else { return }
                 _ = await cacheArtwork(song)
             } catch {
                 if generation == startGeneration && !(error is CancellationError) {
@@ -135,6 +138,7 @@ final class OfflineStore: ObservableObject {
                 guard !Task.isCancelled, generation == startGeneration else { break }
                 do {
                     try await cacheAudio(song)
+                    guard !Task.isCancelled, generation == startGeneration else { break }
                     _ = await cacheArtwork(song)
                 } catch {
                     failures += 1
@@ -152,9 +156,9 @@ final class OfflineStore: ObservableObject {
 
     func clearMedia() throws {
         cancelDownloads()
+        defer { artworkRevision += 1 }
         try storage.removeMedia()
         errorMessage = nil
-        revision += 1
     }
 
     func cancelDownloads() {

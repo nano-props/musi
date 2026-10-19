@@ -38,16 +38,25 @@ final class AudioPlayer: ObservableObject {
         configureRemoteCommands()
     }
 
-    deinit {
+    isolated deinit {
         if let timeObserver { player.removeTimeObserver(timeObserver) }
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
     }
 
     func play(_ song: Song, from playlist: Playlist) {
-        if currentSong?.url == song.url {
+        if currentSong == song, player.currentItem?.status != .failed {
+            songs = playlist.songs
             resume()
             return
         }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            errorMessage = "无法启动音频会话：\(error.localizedDescription)"
+            return
+        }
+
         songs = playlist.songs
         audioCacheTask?.cancel()
         artworkTask?.cancel()
@@ -57,14 +66,6 @@ final class AudioPlayer: ObservableObject {
         duration = 0
         errorMessage = nil
 
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            errorMessage = "无法启动音频会话：\(error.localizedDescription)"
-            return
-        }
-
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         let localURL = offline.localAudioURL(for: song)
         let item = AVPlayerItem(url: localURL ?? song.url)
@@ -73,13 +74,17 @@ final class AudioPlayer: ObservableObject {
             object: item,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.next() }
+            Task { @MainActor [weak self] in
+                guard let self, self.player.currentItem === item else { return }
+                self.next()
+            }
         }
         statusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
             guard item.status == .failed else { return }
             Task { @MainActor [weak self] in
-                self?.isPlaying = false
-                self?.errorMessage = item.error?.localizedDescription ?? "音频播放失败，请检查歌曲地址。"
+                guard let self, self.player.currentItem === item else { return }
+                self.isPlaying = false
+                self.errorMessage = item.error?.localizedDescription ?? "音频播放失败，请检查歌曲地址。"
             }
         }
         player.replaceCurrentItem(with: item)

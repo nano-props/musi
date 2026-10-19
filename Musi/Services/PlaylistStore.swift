@@ -34,6 +34,8 @@ final class PlaylistStore: ObservableObject {
             errorMessage = PlaylistError.invalidSourceURL.localizedDescription
             return false
         }
+        // Invalidate an in-flight response before the replacement request is scheduled.
+        refreshID += 1
         let changed = sourceURL != value
         sourceURL = value
         UserDefaults.standard.set(value, forKey: key)
@@ -69,7 +71,7 @@ final class PlaylistStore: ObservableObject {
                 throw PlaylistError.httpStatus(response.statusCode)
             }
             let updated = try PlaylistParser.parse(data, sourceURL: url)
-            guard requestID == refreshID else { return }
+            guard requestID == refreshID, sourceURL == url.absoluteString else { return }
             playlist = updated
             do {
                 try storage.savePlaylist(data, for: url)
@@ -77,7 +79,9 @@ final class PlaylistStore: ObservableObject {
                 errorMessage = "歌单已加载，但无法保存离线副本：\(error.localizedDescription)"
             }
         } catch {
-            if requestID == refreshID { errorMessage = error.localizedDescription }
+            if requestID == refreshID, sourceURL == url.absoluteString {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

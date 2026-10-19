@@ -56,8 +56,10 @@ struct SourceSheet: View {
                         let previousURL = library.sourceURL
                         let saved = library.setSource(input)
                         if saved {
-                            if library.sourceURL != previousURL { offline.cancelDownloads() }
-                            player.stop()
+                            if library.sourceURL != previousURL {
+                                offline.cancelDownloads()
+                                player.stop()
+                            }
                             dismiss()
                         }
                     }
