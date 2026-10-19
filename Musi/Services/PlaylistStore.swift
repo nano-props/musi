@@ -9,9 +9,16 @@ final class PlaylistStore: ObservableObject {
     @Published var errorMessage: String?
 
     private let key = "playlistSourceURL"
+    private let legacyDemoURL = "https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.json"
 
     init() {
-        sourceURL = UserDefaults.standard.string(forKey: key) ?? ""
+        let savedURL = UserDefaults.standard.string(forKey: key) ?? ""
+        if savedURL == legacyDemoURL {
+            UserDefaults.standard.removeObject(forKey: key)
+            sourceURL = ""
+        } else {
+            sourceURL = savedURL
+        }
     }
 
     func setSource(_ rawValue: String) async -> Bool {

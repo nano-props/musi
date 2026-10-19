@@ -33,12 +33,6 @@ struct PlaylistParserSmoke {
             // Expected: fail clearly when the remote format changes.
         }
 
-        let sample = try Data(contentsOf: URL(fileURLWithPath: "examples/playlist.json"))
-        let demo = try PlaylistParser.parse(sample, sourceURL: source)
-        precondition(demo.title == "Musi 演示歌单")
-        precondition(demo.songs.count == 2)
-        precondition(demo.songs.allSatisfy { $0.url.scheme == "https" })
-
         print("Playlist parser checks passed")
     }
 }

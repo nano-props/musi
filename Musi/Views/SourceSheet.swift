@@ -7,8 +7,6 @@ struct SourceSheet: View {
     @State private var input = ""
     @State private var isSaving = false
 
-    private let demoURL = "https://raw.githubusercontent.com/nano-props/musi/main/examples/playlist.json"
-
     var body: some View {
         NavigationStack {
             Form {
@@ -19,11 +17,6 @@ struct SourceSheet: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .submitLabel(.done)
-                    Button {
-                        input = demoURL
-                    } label: {
-                        Label("使用演示歌单", systemImage: "play.rectangle")
-                    }
                 } header: {
                     Text("歌单地址")
                 } footer: {
